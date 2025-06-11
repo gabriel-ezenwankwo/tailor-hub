@@ -1,10 +1,11 @@
 /**
  * Health Check Routes
- * 
+ *
  * Provides endpoints for monitoring application health and status.
  */
 
 const express = require('express');
+
 const router = express.Router();
 const config = require('../config');
 
@@ -19,7 +20,7 @@ router.get('/', (req, res) => {
     message: 'TailorHub API is running',
     environment: config.app.environment,
     timestamp: new Date(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
 });
 
@@ -39,7 +40,7 @@ router.get('/detailed', (req, res) => {
       nodeVersion: process.version,
       uptime: process.uptime(),
       memoryUsage: process.memoryUsage(),
-    }
+    },
   });
 });
 
