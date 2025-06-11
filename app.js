@@ -4,6 +4,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
+const config = require('./config');
+
 require('dotenv').config();
 
 const errorHandler = require('./middleware/errorHandler');
@@ -13,29 +15,30 @@ const AppError = require('./utils/AppError');
 const app = express();
 
 // Create logs directory if it doesn't exist
-const logsDir = path.join(__dirname, 'logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
+if (!fs.existsSync(config.logging.directory)) {
+  fs.mkdirSync(config.logging.directory, { recursive: true });
 }
 
 // Configure environment-specific logging
-if (process.env.NODE_ENV === 'production') {
+if (config.app.isProduction) {
   // Create a write stream for access logs
   const accessLogStream = fs.createWriteStream(
-    path.join(logsDir, 'access.log'),
-    { flags: 'a' } // 'a' flag for appending to the log file
+    path.join(config.logging.directory, 'access.log'),
+    { flags: 'a' }
   );
-  
+
   // Use combined format for production
-  app.use(morgan('combined', { stream: accessLogStream }));
+  app.use(morgan(config.logging.format, { stream: accessLogStream }));
 } else {
-  // Continue using dev format for development
-  app.use(morgan('dev'));
+  app.use(morgan(config.logging.format));
 }
+
 
 // Existing middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: config.security.corsOrigins
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,7 +1,6 @@
 const app = require('./app');
+const config = require('./config');
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`TailorHub API running on port ${PORT}`);
+app.listen(config.server.port, () => {
+  console.log(`${config.app.name} API running in ${config.app.environment} mode on port ${config.server.port}`);
 });
