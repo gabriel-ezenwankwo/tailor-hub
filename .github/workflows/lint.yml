@@ -1,0 +1,96 @@
+# .github/workflows/lint.yml
+
+name: Code Quality Checks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Allow manual triggering from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x]
+      # Don't cancel all jobs if one version fails
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code formatting with Prettier
+        run: npm run format:check
+
+      - name: Run ESLint
+        run: npm run lint
+
+      # Optional - automatic fix creation
+      - name: Create auto-fix PR for formatting issues (if any)
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "style: auto-fix linting and formatting issues"
+          title: "style: auto-fix linting and formatting issues"
+          body: |
+            This PR fixes linting and formatting issues automatically.
+
+            - Run ESLint with --fix
+            - Run Prettier to format code
+          branch: auto-fix-lint-issues
+          base: develop
+          labels: automation, code-quality
+
+  # Check for sensitive information with Gitleaks
+  security-scan:
+    name: Check for Sensitive Information
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Optional dependency vulnerability check
+  vulnerability-scan:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --production
+        # Continue on error since we just want this to be informative at this stage
+        continue-on-error: true
