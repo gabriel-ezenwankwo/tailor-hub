@@ -6,6 +6,10 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+const errorHandler = require('./middleware/errorHandler');
+const notFoundHandler = require('./middleware/notFoundHandler');
+const AppError = require('./utils/AppError');
+
 const app = express();
 
 // Create logs directory if it doesn't exist
@@ -38,15 +42,24 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/health', require('./routes/health'));
 
-// 404 Handler
-app.use((req, res) => {
-  res.status(404).json({ message: 'Resource not found' });
+// Handle unhandled routes (404)
+app.use(notFoundHandler);
+
+// Global error handler
+app.use(errorHandler);
+
+// Unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error(err.name, err.message, err.stack);
+  process.exit(1);
 });
 
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Internal server error' });
+// Uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.error(err.name, err.message, err.stack);
+  process.exit(1);
 });
 
 module.exports = app;
