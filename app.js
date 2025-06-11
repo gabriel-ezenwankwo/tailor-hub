@@ -1,16 +1,18 @@
+/**
+ * Main application setup
+ */
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
+
 const config = require('./config');
-
-require('dotenv').config();
-
+const { configureRoutes } = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
-const AppError = require('./utils/AppError');
 
 const app = express();
 
@@ -21,29 +23,35 @@ if (!fs.existsSync(config.logging.directory)) {
 
 // Configure environment-specific logging
 if (config.app.isProduction) {
-  // Create a write stream for access logs
   const accessLogStream = fs.createWriteStream(
     path.join(config.logging.directory, 'access.log'),
     { flags: 'a' }
   );
-
-  // Use combined format for production
   app.use(morgan(config.logging.format, { stream: accessLogStream }));
 } else {
   app.use(morgan(config.logging.format));
 }
 
-
-// Existing middleware
+// Security middleware
 app.use(helmet());
 app.use(cors({
   origin: config.security.corsOrigins
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/health', require('./routes/health'));
+// Body parsers
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Setup API documentation endpoint (placeholder for future Swagger/OpenAPI)
+app.get('/api/docs', (req, res) => {
+  res.status(200).json({
+    message: 'API documentation will be available here',
+    // Will be replaced with actual documentation in the future
+  });
+});
+
+// Configure all application routes
+configureRoutes(app);
 
 // Handle unhandled routes (404)
 app.use(notFoundHandler);
