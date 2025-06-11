@@ -1,10 +1,11 @@
 /**
  * User Routes
- * 
+ *
  * Handles all endpoints related to user management
  */
 
 const express = require('express');
+
 const router = express.Router();
 // const userController = require('../controllers/userController');
 // const { protect, restrictTo } = require('../middleware/authMiddleware');
@@ -18,7 +19,7 @@ router.post('/', (req, res) => {
   // Will be implemented with userController.registerUser
   res.status(200).json({
     status: 'success',
-    message: 'User registration endpoint - to be implemented'
+    message: 'User registration endpoint - to be implemented',
   });
 });
 
@@ -31,7 +32,7 @@ router.get('/', (req, res) => {
   // Will be implemented with protect, restrictTo('admin'), userController.getAllUsers
   res.status(200).json({
     status: 'success',
-    message: 'Get all users endpoint - to be implemented'
+    message: 'Get all users endpoint - to be implemented',
   });
 });
 

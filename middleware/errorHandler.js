@@ -18,10 +18,9 @@ const handleDuplicateFieldsDB = err => {
   return new AppError(message, 400);
 };
 
-const handleJWTError = () => 
-  new AppError('Invalid token. Please log in again.', 401);
+const handleJWTError = () => new AppError('Invalid token. Please log in again.', 401);
 
-const handleJWTExpiredError = () => 
+const handleJWTExpiredError = () =>
   new AppError('Your token has expired. Please log in again.', 401);
 
 // Development error response - detailed information
@@ -30,7 +29,7 @@ const sendErrorDev = (err, res) => {
     status: err.status,
     message: err.message,
     stack: err.stack,
-    error: err
+    error: err,
   });
 };
 
@@ -40,18 +39,18 @@ const sendErrorProd = (err, res) => {
   if (err.isOperational) {
     res.status(err.statusCode).json({
       status: err.status,
-      message: err.message
+      message: err.message,
     });
-  } 
+  }
   // Programming or unknown error: don't leak error details
   else {
     // Log error for developers
     console.error('ERROR 💥', err);
-    
+
     // Send generic message
     res.status(500).json({
       status: 'error',
-      message: 'Something went wrong'
+      message: 'Something went wrong',
     });
   }
 };

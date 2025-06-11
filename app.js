@@ -23,10 +23,9 @@ if (!fs.existsSync(config.logging.directory)) {
 
 // Configure environment-specific logging
 if (config.app.isProduction) {
-  const accessLogStream = fs.createWriteStream(
-    path.join(config.logging.directory, 'access.log'),
-    { flags: 'a' }
-  );
+  const accessLogStream = fs.createWriteStream(path.join(config.logging.directory, 'access.log'), {
+    flags: 'a',
+  });
   app.use(morgan(config.logging.format, { stream: accessLogStream }));
 } else {
   app.use(morgan(config.logging.format));
@@ -34,9 +33,11 @@ if (config.app.isProduction) {
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: config.security.corsOrigins
-}));
+app.use(
+  cors({
+    origin: config.security.corsOrigins,
+  })
+);
 
 // Body parsers
 app.use(express.json({ limit: '10kb' }));
@@ -60,14 +61,14 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', err => {
   console.error('UNHANDLED REJECTION! 💥 Shutting down...');
   console.error(err.name, err.message, err.stack);
   process.exit(1);
 });
 
 // Uncaught exceptions
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', err => {
   console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
   console.error(err.name, err.message, err.stack);
   process.exit(1);
