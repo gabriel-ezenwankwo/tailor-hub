@@ -95,9 +95,16 @@ const config = {
     corsOrigins: process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(',')
       : ['http://localhost:3000'],
-    rateLimiting: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: isProduction ? 100 : 1000, // limit each IP to 100 requests per windowMs in production
+    rateLimit: {
+      // Rate limiting window in milliseconds (15 minutes)
+      windowMs: process.env.RATE_LIMIT_WINDOW_MS
+        ? parseInt(process.env.RATE_LIMIT_WINDOW_MS)
+        : 15 * 60 * 1000,
+
+      // Maximum number of attempts within window
+      maxAttempts: process.env.RATE_LIMIT_MAX_ATTEMPTS
+        ? parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS)
+        : 5,
     },
   },
 };
