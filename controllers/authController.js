@@ -32,12 +32,20 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new AppError('Please provide all required fields', 400));
   }
 
+  // Check if email already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return next(new AppError('Email already in use. Please use a different email', 409));
+  }
+
+  console.log('password', firstName, lastName, email, password, role);
+
   // Create user with allowed fields only
   const newUser = await User.create({
     firstName,
     lastName,
     email,
-    password,
+    password, // Will be hashed by pre-save middleware
     role: role || 'client', // Default to client if not specified
   });
 
@@ -81,7 +89,12 @@ exports.protect = catchAsync(async (req, res, next) => {
   }
 
   // 2) Verify token
-  const decoded = await promisify(jwt.verify)(token, config.jwt.secret);
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, config.jwt.secret);
+  } catch (err) {
+    return next(new AppError('Invalid token. Please log in again', 401));
+  }
 
   // 3) Check if user still exists
   const currentUser = await User.findById(decoded.id);
