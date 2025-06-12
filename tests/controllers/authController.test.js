@@ -415,3 +415,80 @@ describe('Auth Controller - Protect Middleware', () => {
     expect(mockNext).toHaveBeenCalledWith();
   });
 });
+
+describe('Auth Controller - Protect Middleware (Token Expiration)', () => {
+  test('should return 401 with specific message if token is expired', async () => {
+    // Arrange
+    const req = mockRequest();
+    req.headers = { authorization: 'Bearer expired-token' };
+    const res = mockResponse();
+
+    // Mock jwt.verify to throw TokenExpiredError
+    const tokenExpiredError = new Error('jwt expired');
+    tokenExpiredError.name = 'TokenExpiredError';
+
+    jest.spyOn(jwt, 'verify').mockImplementationOnce((token, secret, callback) => {
+      callback(tokenExpiredError, null);
+    });
+
+    // Act
+    await authController.protect(req, res, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+    const error = mockNext.mock.calls[0][0];
+    expect(error).toBeInstanceOf(AppError);
+    expect(error.statusCode).toBe(401);
+    expect(error.message).toBe('Token expired. Please log in again');
+  });
+
+  test('should return 401 with specific message if token signature is invalid', async () => {
+    // Arrange
+    const req = mockRequest();
+    req.headers = { authorization: 'Bearer invalid-signature-token' };
+    const res = mockResponse();
+
+    // Mock jwt.verify to throw JsonWebTokenError
+    const jwtError = new Error('invalid signature');
+    jwtError.name = 'JsonWebTokenError';
+
+    jest.spyOn(jwt, 'verify').mockImplementationOnce((token, secret, callback) => {
+      callback(jwtError, null);
+    });
+
+    // Act
+    await authController.protect(req, res, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+    const error = mockNext.mock.calls[0][0];
+    expect(error).toBeInstanceOf(AppError);
+    expect(error.statusCode).toBe(401);
+    expect(error.message).toBe('Invalid token. Please log in again');
+  });
+
+  test('should return 401 with generic message for other JWT errors', async () => {
+    // Arrange
+    const req = mockRequest();
+    req.headers = { authorization: 'Bearer problematic-token' };
+    const res = mockResponse();
+
+    // Mock jwt.verify to throw a non-standard JWT error
+    const otherError = new Error('some other error');
+    otherError.name = 'OtherError';
+
+    jest.spyOn(jwt, 'verify').mockImplementationOnce((token, secret, callback) => {
+      callback(otherError, null);
+    });
+
+    // Act
+    await authController.protect(req, res, mockNext);
+
+    // Assert
+    expect(mockNext).toHaveBeenCalled();
+    const error = mockNext.mock.calls[0][0];
+    expect(error).toBeInstanceOf(AppError);
+    expect(error.statusCode).toBe(401);
+    expect(error.message).toBe('Authentication failed. Please log in again');
+  });
+});

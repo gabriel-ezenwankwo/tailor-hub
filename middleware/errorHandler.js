@@ -37,22 +37,27 @@ const sendErrorDev = (err, res) => {
 const sendErrorProd = (err, res) => {
   // Operational, trusted error: send message to client
   if (err.isOperational) {
-    res.status(err.statusCode).json({
+    const response = {
       status: err.status,
       message: err.message,
-    });
-  }
-  // Programming or unknown error: don't leak error details
-  else {
-    // Log error for developers
-    console.error('ERROR 💥', err);
+    };
 
-    // Send generic message
-    res.status(500).json({
-      status: 'error',
-      message: 'Something went wrong',
-    });
+    // For token errors, add a more specific code
+    if (err.type) {
+      response.code = err.type;
+    }
+
+    return res.status(err.statusCode).json(response);
   }
+
+  // Programming or other unknown error: don't leak error details
+  console.error('ERROR 💥', err);
+
+  // Send generic message
+  res.status(500).json({
+    status: 'error',
+    message: 'Something went wrong',
+  });
 };
 
 // Main error handling middleware
