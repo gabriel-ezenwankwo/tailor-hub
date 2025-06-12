@@ -97,6 +97,11 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   return false;
 };
 
+// Add indexes for frequently queried fields
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1 });
+userSchema.index({ createdAt: 1 });
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;

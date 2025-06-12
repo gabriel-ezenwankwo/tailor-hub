@@ -1,111 +1,74 @@
-/**
- * Database Connection Module
- *
- * Provides a generic database connection function that uses configuration
- * from config/index.js. This is a placeholder implementation that can be
- * extended with specific database driver code in the future.
- */
-
+// config/db.js
+const mongoose = require('mongoose');
 const config = require('./index');
 
-/**
- * Masks sensitive information in database connection string
- * for safe logging
- *
- * @param {string} connectionString - The database connection string
- * @returns {string} Masked connection string
- */
-const maskConnectionString = connectionString => {
+// Mask sensitive info in connection string for logging
+const getMaskedUri = uri => {
+  if (!uri) return 'undefined';
+
   try {
-    // This is a simple implementation that works for common connection string formats
-    // It can be expanded to handle various database connection string formats
-
-    // For URLs with authentication information
-    if (connectionString.includes('@')) {
-      const parts = connectionString.split('@');
-      const credentialsPart = parts[0];
-      const hostPart = parts[1];
-
-      // Find where the credentials start (after ://)
-      const protocolSplit = credentialsPart.split('://');
-      const protocol = protocolSplit.length > 1 ? `${protocolSplit[0]}://` : '';
-      const credentials = protocolSplit.length > 1 ? protocolSplit[1] : credentialsPart;
-
-      // If there's a password, mask it
-      if (credentials.includes(':')) {
-        const [username] = credentials.split(':');
-        return `${protocol}${username}:******@${hostPart}`;
-      }
-
-      // Just a username, no need to mask
-      return connectionString;
-    }
-
-    // For connection strings without authentication, return as is
-    return connectionString;
-  } catch (error) {
-    // If any parsing error occurs, return a fully masked string
-    return 'Connection string (masked for security)';
+    // Replace password in URI with asterisks
+    return uri.replace(/(:.*@)/g, ':***@');
+  } catch (err) {
+    return 'Unable to mask URI';
   }
 };
 
-/**
- * Connect to the database
- *
- * @returns {Promise<void>} Resolves when connection is established
- * @throws {Error} If connection fails
- */
+// Connect to MongoDB
 const connectDB = async () => {
   try {
-    // Log connection attempt
-    console.log(
-      `Attempting to connect to database at ${maskConnectionString(config.database.url)}`
-    );
+    // Set mongoose debug mode based on configuration
+    mongoose.set('debug', config.database.debug);
 
-    // This is where specific database driver connection code would go
-    // For example: await mongoose.connect(config.database.url, config.database.options);
+    // Log connection attempt (with masked URI)
+    console.log(`Connecting to MongoDB: ${getMaskedUri(config.database.uri)}`);
 
-    // Simulate connection delay for demonstration purposes
-    await new Promise(resolve => {
-      setTimeout(resolve, 500);
-    });
+    // Create MongoDB connection
+    const conn = await mongoose.connect(config.database.uri, config.database.options);
 
-    // Log successful connection
-    console.log(
-      `Database connection established successfully in ${config.app.environment} environment`
-    );
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
 
-    return { success: true, message: 'Database connected' };
-  } catch (error) {
-    // Log connection failure with error details
-    console.error('Database connection failed');
-    console.error(error);
-
-    // Re-throw the error for the caller to handle
-    throw new Error(`Database connection failed: ${error.message}`);
+    // Return connection for potential further use
+    return conn;
+  } catch (err) {
+    console.error(`Error: MongoDB connection failed - ${err.message}`);
+    process.exit(1);
   }
 };
 
-/**
- * Close database connection
- *
- * @returns {Promise<void>} Resolves when connection is closed
- */
+// Close MongoDB connection
 const closeDB = async () => {
   try {
-    // This is where specific database driver disconnection code would go
-    // For example: await mongoose.connection.close();
-
-    console.log('Database connection closed successfully');
-    return { success: true, message: 'Database disconnected' };
-  } catch (error) {
-    console.error('Error closing database connection:', error);
-    throw error;
+    await mongoose.connection.close();
+    console.log('MongoDB connection closed');
+    return true;
+  } catch (err) {
+    console.error(`Error: Failed to close MongoDB connection - ${err.message}`);
+    return false;
   }
 };
+
+// Handle connection events
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB connection established');
+});
+
+mongoose.connection.on('error', err => {
+  console.error(`MongoDB connection error: ${err}`);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB connection disconnected');
+});
+
+// Handle process termination
+process.on('SIGINT', async () => {
+  await closeDB();
+  process.exit(0);
+});
 
 module.exports = {
   connectDB,
   closeDB,
-  maskConnectionString,
+  connection: mongoose.connection,
 };

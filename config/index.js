@@ -41,12 +41,28 @@ const config = {
 
   // Database settings
   database: {
-    url: process.env.DATABASE_URL || 'mongodb://localhost:27017/tailorhub',
+    // MongoDB connection string - Default to localhost if no MONGO_URI provided
+    uri: process.env.MONGO_URI || 'mongodb://localhost:27017/tailorhub',
+
+    // Connection options
     options: {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      useCreateIndex: !!isProduction,
-      autoIndex: !isProduction,
+      maxPoolSize: process.env.MONGO_POOL_SIZE ? parseInt(process.env.MONGO_POOL_SIZE) : 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    },
+
+    // Debug mode (enabled in development)
+    debug: process.env.NODE_ENV === 'development',
+
+    // Atlas configuration (if using MongoDB Atlas)
+    atlas: {
+      enabled: process.env.MONGO_USE_ATLAS === 'true',
+      username: process.env.MONGO_ATLAS_USERNAME,
+      password: process.env.MONGO_ATLAS_PASSWORD,
+      cluster: process.env.MONGO_ATLAS_CLUSTER,
+      database: process.env.MONGO_ATLAS_DATABASE || 'tailorhub',
     },
   },
 
@@ -85,6 +101,18 @@ const config = {
     },
   },
 };
+
+// Build MongoDB Atlas connection string if enabled
+if (
+  config.database.atlas.enabled &&
+  config.database.atlas.username &&
+  config.database.atlas.password &&
+  config.database.atlas.cluster
+) {
+  const { username, password, cluster, database } = config.database.atlas;
+
+  config.database.uri = `mongodb+srv://${username}:${password}@${cluster}/${database}?retryWrites=true&w=majority`;
+}
 
 /**
  * Environment-specific overrides
