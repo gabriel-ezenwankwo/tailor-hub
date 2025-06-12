@@ -311,9 +311,12 @@ describe('Auth Controller - Protect Middleware', () => {
     req.headers = { authorization: 'Bearer invalid-token' };
     const res = mockResponse();
 
-    // Mock jwt.verify to throw an error
+    // Mock jwt.verify to throw a JsonWebTokenError
+    const jwtError = new Error('invalid token');
+    jwtError.name = 'JsonWebTokenError'; // This is the key fix - setting the error name
+
     jest.spyOn(jwt, 'verify').mockImplementation((token, secret, callback) => {
-      callback(new Error('invalid token'), null);
+      callback(jwtError, null);
     });
 
     // Act
