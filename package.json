@@ -12,7 +12,9 @@
     "format:check": "prettier --check \"**/*.{js,json,md}\"",
     "check": "npm run lint && npm run format:check",
     "fix": "npm run lint:fix && npm run format",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "repository": {
     "type": "git",
