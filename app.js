@@ -13,6 +13,7 @@ const config = require('./config');
 const { configureRoutes } = require('./routes');
 const errorHandler = require('./middleware/errorHandler');
 const notFoundHandler = require('./middleware/notFoundHandler');
+const requestId = require('./middleware/requestId');
 
 const app = express();
 
@@ -50,6 +51,9 @@ app.get('/api/docs', (req, res) => {
     // Will be replaced with actual documentation in the future
   });
 });
+
+// Add request ID middleware early in the chain
+app.use(requestId);
 
 // Configure all application routes
 configureRoutes(app);

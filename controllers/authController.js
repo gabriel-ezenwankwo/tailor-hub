@@ -3,6 +3,7 @@ const { promisify } = require('util');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const { logError } = require('../utils/logger');
 const config = require('../config');
 
 // Helper function to create and sign JWT
@@ -66,6 +67,12 @@ exports.login = catchAsync(async (req, res, next) => {
 
   // Check if user exists & password is correct
   if (!user || !(await user.correctPassword(password, user.password))) {
+    // Log failed login attempt (email is sanitized in the logger)
+    logError(
+      'Failed login attempt',
+      new Error('Invalid credentials'),
+      { ...req, body: { email } } // Pass only email, not password
+    );
     return next(new AppError('Incorrect email or password', 401));
   }
 

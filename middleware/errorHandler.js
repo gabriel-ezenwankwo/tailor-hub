@@ -1,6 +1,10 @@
 const AppError = require('../utils/AppError');
+const { logError } = require('../utils/logger');
+const config = require('../config');
 
-// Handle specific error types
+const handleJWTError = () => new AppError('Invalid token. Please log in again', 401);
+const handleJWTExpiredError = () => new AppError('Token expired. Please log in again', 401);
+
 const handleCastErrorDB = err => {
   const message = `Invalid ${err.path}: ${err.value}`;
   return new AppError(message, 400);
@@ -18,13 +22,11 @@ const handleDuplicateFieldsDB = err => {
   return new AppError(message, 400);
 };
 
-const handleJWTError = () => new AppError('Invalid token. Please log in again.', 401);
-
-const handleJWTExpiredError = () =>
-  new AppError('Your token has expired. Please log in again.', 401);
-
 // Development error response - detailed information
-const sendErrorDev = (err, res) => {
+const sendErrorDev = (err, req, res) => {
+  // Log all errors in development
+  logError('Error in development mode', err, req);
+
   res.status(err.statusCode).json({
     status: err.status,
     message: err.message,
@@ -34,7 +36,20 @@ const sendErrorDev = (err, res) => {
 };
 
 // Production error response - limited information
-const sendErrorProd = (err, res) => {
+const sendErrorProd = (err, req, res) => {
+  // For all authentication errors, log securely with additional context
+  if (err.statusCode === 401 || err.statusCode === 403) {
+    logError(`Authentication error: ${err.message}`, err, req);
+  }
+  // For 500 server errors, always log as they indicate potential issues
+  else if (err.statusCode >= 500) {
+    logError(`Server error: ${err.message}`, err, req);
+  }
+  // For 400 validation errors, only log in verbose mode (can be noisy)
+  else if (config.logging.verbose && err.statusCode === 400) {
+    logError(`Validation error`, err, req);
+  }
+
   // Operational, trusted error: send message to client
   if (err.isOperational) {
     const response = {
@@ -51,7 +66,8 @@ const sendErrorProd = (err, res) => {
   }
 
   // Programming or other unknown error: don't leak error details
-  console.error('ERROR 💥', err);
+  // Log unknown errors as they're likely bugs that need fixing
+  logError('Unexpected error', err, req);
 
   // Send generic message
   res.status(500).json({
@@ -66,7 +82,7 @@ module.exports = (err, req, res, next) => {
   err.status = err.status || 'error';
 
   if (process.env.NODE_ENV === 'development') {
-    sendErrorDev(err, res);
+    sendErrorDev(err, req, res);
   } else if (process.env.NODE_ENV === 'production') {
     let error = Object.create(err);
 
@@ -77,6 +93,6 @@ module.exports = (err, req, res, next) => {
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
 
-    sendErrorProd(error, res);
+    sendErrorProd(error, req, res);
   }
 };

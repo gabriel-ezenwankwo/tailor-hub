@@ -75,9 +75,12 @@ const config = {
 
   // Logging configuration
   logging: {
-    level: isProduction ? 'info' : 'debug',
-    format: isProduction ? 'combined' : 'dev',
-    directory: path.join(__dirname, '../logs'),
+    format: process.env.NODE_ENV === 'production' ? 'combined' : 'dev',
+    directory: 'logs',
+    // Whether to log detailed information for 400-level errors
+    verbose: process.env.LOGGING_VERBOSE === 'true' || process.env.NODE_ENV === 'development',
+    // Log level - affects what gets logged
+    level: process.env.LOGGING_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
   },
 
   // Email configuration (placeholder for future implementation)
