@@ -8,13 +8,8 @@
 const express = require('express');
 
 // Import route modules
+const authRoutes = require('./authRoutes');
 const healthRoutes = require('./health');
-
-// Future route imports will be added here
-// const userRoutes = require('./users');
-// const orderRoutes = require('./orders');
-// const measurementRoutes = require('./measurements');
-// const appointmentRoutes = require('./appointments');
 
 /**
  * Register all routes for a specific API version
@@ -30,12 +25,7 @@ const createVersionedRoutes = () => {
 
   // Core system routes
   router.use('/health', healthRoutes);
-
-  // Future routes will be registered here
-  // router.use('/users', userRoutes);
-  // router.use('/orders', orderRoutes);
-  // router.use('/measurements', measurementRoutes);
-  // router.use('/appointments', appointmentRoutes);
+  router.use('/auth', authRoutes);
 
   return router;
 };
@@ -52,9 +42,6 @@ const configureRoutes = app => {
   // For backward compatibility or testing, we can keep the health endpoint
   // at the root level as well
   app.use('/health', healthRoutes);
-
-  // Future API versions would be added here
-  // app.use('/api/v2', createVersionedRoutes('v2'));
 
   console.log('Routes configured successfully');
 };
